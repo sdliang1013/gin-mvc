@@ -66,7 +66,7 @@ func (ctrl *Controller) GetData(ctx *gin.Context) (data any, err error) {
 }
 
 func Run(addr string) {
-	engine = gin.Default()
+	engine := gin.Default()
 	// 设置router
 	router := &caul.CRouter{IRouter: engine.Group("/api/v1")}
 	// register middleware
