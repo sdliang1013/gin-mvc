@@ -1,9 +1,9 @@
-package app
+package demo
 
 import (
 	"context"
 	"errors"
-	"gin-mvc/src/core"
+	"gin-mvc/src/caul"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -12,7 +12,7 @@ import (
 
 var (
 	engine   = gin.Default()
-	router   *core.CRouter
+	router   *caul.CRouter
 	ApiRoot  = "/api/v1"
 	Accounts = gin.Accounts{
 		"admin": "admin",
@@ -44,12 +44,12 @@ func (agent *DemoServer) Timeout() time.Duration {
 
 func Run(addr string) {
 	// 设置router
-	router = &core.CRouter{IRouter: engine.Group(ApiRoot)}
+	router = &caul.CRouter{IRouter: engine.Group(ApiRoot)}
 	// register middleware
 	router.RegisterMiddleware(gin.BasicAuth(Accounts))
 	// register routers
 	// 注册方式: Route
-	router.RegisterRoute(core.CRoute{Path: "/mvc1", Controller: &Controller{}})
+	router.RegisterRoute(caul.CRoute{Path: "/mvc1", Controller: &Controller{}})
 	// 注册方式: 自动扫描
 	router.RegisterController("/mvc2", &Controller{})
 	// start engine
@@ -62,5 +62,5 @@ func Run(addr string) {
 		},
 		TimeOut: 15 * time.Second,
 	}
-	core.StartSecureServer(server)
+	caul.StartSecureServer(server)
 }

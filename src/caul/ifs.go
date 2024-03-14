@@ -1,4 +1,4 @@
-package core
+package caul
 
 func IfString(cond bool, a, b string) string {
 	if cond {

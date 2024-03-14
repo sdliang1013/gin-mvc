@@ -1,7 +1,7 @@
-package app
+package demo
 
 import (
-	"gin-mvc/src/core"
+	"gin-mvc/src/caul"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -11,8 +11,8 @@ type Controller struct {
 }
 
 // Routes 自定义路由信息
-func (ctrl *Controller) Routes() []core.Route {
-	return []core.Route{
+func (ctrl *Controller) Routes() []caul.Route {
+	return []caul.Route{
 		{Path: "/", Func: ctrl.GetData, Method: http.MethodGet},
 		{Path: "/create", Func: ctrl.PostData, Method: http.MethodPost},
 		{Path: "/download", Func: ctrl.GetDownload, Method: http.MethodGet},
@@ -23,7 +23,7 @@ func (ctrl *Controller) GetData(ctx *gin.Context) (data any, err error) {
 	// get param
 	var id string
 	// id 非空校验
-	id, err = core.NotNilString(ctx, "id")
+	id, err = caul.NotNilString(ctx, "id")
 	data = map[string]string{
 		"id": id,
 	}
@@ -47,21 +47,21 @@ func (ctrl *Controller) GetDownload(ctx *gin.Context) (data any, err error) {
 	// get param
 	path := ctx.Query("path")
 	if path == "" {
-		core.ResponseJson(ctx, nil,
-			core.NewHttpError(http.StatusBadRequest, core.ErrCodeUnknown, "path不能为空", nil))
+		caul.ResponseJson(ctx, nil,
+			caul.NewHttpError(http.StatusBadRequest, caul.ErrCodeUnknown, "path不能为空", nil))
 		return
 	}
 	// check file
 	var stat os.FileInfo
 	stat, err = os.Stat(path)
 	if err != nil {
-		core.ResponseJson(ctx, nil,
-			core.NewHttpError(http.StatusBadRequest, core.ErrCodeUnknown, "文件不存在", err))
+		caul.ResponseJson(ctx, nil,
+			caul.NewHttpError(http.StatusBadRequest, caul.ErrCodeUnknown, "文件不存在", err))
 		return
 	}
 	if stat.IsDir() {
-		core.ResponseJson(ctx, nil,
-			core.NewHttpError(http.StatusBadRequest, core.ErrCodeUnknown, "目标是文件夹", nil))
+		caul.ResponseJson(ctx, nil,
+			caul.NewHttpError(http.StatusBadRequest, caul.ErrCodeUnknown, "目标是文件夹", nil))
 		return
 
 	}

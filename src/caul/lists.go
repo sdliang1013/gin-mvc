@@ -1,4 +1,4 @@
-package core
+package caul
 
 func ContainsString(ary []string, str string) bool {
 	for _, s := range ary {

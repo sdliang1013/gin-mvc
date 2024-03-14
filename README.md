@@ -1,21 +1,21 @@
 # Gin-MVC Web Framework
 
-Gin is a web framework base on [Gin](https://github.com/gin-gonic/gin). 
+Gin is a web framework base on [Gin](https://github.com/gin-gonic/gin).
 
 **The key features of Gin are:**
 
-- Controller Auto Register
-- Controller Custom Register
-- Server With Graceful shutdown
+- Auto Register Controller
+- Custom Register Controller
+- SecureServer With Graceful shutdown
 - Auto Wrap data to standard json
 - Auto Wrap error to standard json
-
 
 ## Getting started
 
 ### Prerequisites
 
-- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release) (we test it with these).
+- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release) (we test
+  it with these).
 
 ### Getting Gin-MVC
 
@@ -41,7 +41,7 @@ First you need to import Gin-MVC package for using Gin-MVC, one simplest example
 package main
 
 import (
-	"gin-mvc/src/core"
+	"gin-mvc/src/caul"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -49,8 +49,8 @@ import (
 type Controller struct {
 }
 
-func (ctrl *Controller) Routes() []core.Route {
-	return []core.Route{
+func (ctrl *Controller) Routes() []caul.Route {
+	return []caul.Route{
 		{Path: "/", Func: ctrl.GetData, Method: http.MethodGet},
 	}
 }
@@ -58,7 +58,7 @@ func (ctrl *Controller) Routes() []core.Route {
 func (ctrl *Controller) GetData(ctx *gin.Context) (data any, err error) {
 	// get param
 	var id string
-	id, err = core.NotNilString(ctx, "id")
+	id, err = caul.NotNilString(ctx, "id")
 	data = map[string]string{
 		"id": id,
 	}
@@ -68,7 +68,7 @@ func (ctrl *Controller) GetData(ctx *gin.Context) (data any, err error) {
 func Run(addr string) {
 	engine = gin.Default()
 	// 设置router
-	router := &core.CRouter{IRouter: engine.Group("/api/v1")}
+	router := &caul.CRouter{IRouter: engine.Group("/api/v1")}
 	// register middleware
 	router.RegisterMiddleware(gin.BasicAuth(gin.Accounts{
 		"admin": "admin",
@@ -76,7 +76,7 @@ func Run(addr string) {
 	}))
 	// register routers
 	// Route方式
-	router.RegisterRoute(core.CRoute{Path: "/mvc1", Controller: &Controller{}})
+	router.RegisterRoute(caul.CRoute{Path: "/mvc1", Controller: &Controller{}})
 	// 自动扫描
 	router.RegisterController("/mvc2", &Controller{})
 	// start engine
@@ -101,13 +101,19 @@ And use the Go command to run the demo:
 ```
 # run example.go and visit 0.0.0.0:8080/ping on browser
 $ go run example.go
+
+# 通过Route方式注册
+[GIN-debug] GET    /api/v1/mvc1/             --> gin-mvc/src/caul.(*CRouter).FuncWrapper.func1 (4 handlers)
+# 自动注册
+[GIN-debug] GET    /api/v1/mvc2/data         --> gin-mvc/src/caul.(*CRouter).RegisterController.func1.1 (4 handlers)
+
 ```
 
 ### Learn more examples
 
 #### Quick Start
 
-Learn and practice more examples, please read the app/api.go and app/controller.go
+Learn and practice more examples, please read the demo/app.go and demo/controller.go
 
 ## Benchmarks
 

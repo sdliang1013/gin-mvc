@@ -1,7 +1,7 @@
 package main
 
-import "gin-mvc/src/app"
+import "gin-mvc/src/demo"
 
 func main() {
-	app.Run(":8080")
+	demo.Run(":8080")
 }
