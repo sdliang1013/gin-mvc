@@ -1,6 +1,7 @@
 package demo
 
 import (
+	"errors"
 	"gin-mvc/src/caul"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -45,23 +46,19 @@ func (ctrl *Controller) PostData(ctx *gin.Context) (data any, err error) {
 // GetDownload 文件下载
 func (ctrl *Controller) GetDownload(ctx *gin.Context) (data any, err error) {
 	// get param
-	path := ctx.Query("path")
-	if path == "" {
-		caul.ResponseJson(ctx, nil,
-			caul.NewHttpError(http.StatusBadRequest, caul.ErrCodeUnknown, "path不能为空", nil))
+	var path string
+	path, err = caul.NotNilString(ctx, "path")
+	if err != nil {
 		return
 	}
 	// check file
 	var stat os.FileInfo
 	stat, err = os.Stat(path)
 	if err != nil {
-		caul.ResponseJson(ctx, nil,
-			caul.NewHttpError(http.StatusBadRequest, caul.ErrCodeUnknown, "文件不存在", err))
 		return
 	}
 	if stat.IsDir() {
-		caul.ResponseJson(ctx, nil,
-			caul.NewHttpError(http.StatusBadRequest, caul.ErrCodeUnknown, "目标是文件夹", nil))
+		err = errors.New("目标是文件夹")
 		return
 
 	}

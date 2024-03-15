@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -109,6 +110,7 @@ func NotNilUint(ctx *gin.Context, name string) (param uint64, err error) {
 func ResponseString(ctx *gin.Context, data string, err HttpError) {
 	// check err
 	if err != nil {
+		log.Println(err.Error())
 		ctx.String(err.Status(), err.Error())
 		return
 	}
@@ -119,6 +121,7 @@ func ResponseString(ctx *gin.Context, data string, err HttpError) {
 func ResponseJson(ctx *gin.Context, data any, err HttpError) {
 	// check err
 	if err != nil {
+		log.Println(err.Error())
 		ctx.JSON(err.Status(), ErrBody(err.Code(), err.Error(), nil))
 		return
 	}
@@ -129,6 +132,7 @@ func ResponseJson(ctx *gin.Context, data any, err HttpError) {
 func ResponseXml(ctx *gin.Context, data any, err HttpError) {
 	// check err
 	if err != nil {
+		log.Println(err.Error())
 		ctx.XML(err.Status(), ErrBody(err.Code(), err.Error(), nil))
 		return
 	}
@@ -139,6 +143,7 @@ func ResponseXml(ctx *gin.Context, data any, err HttpError) {
 func ResponseYaml(ctx *gin.Context, data any, err HttpError) {
 	// check err
 	if err != nil {
+		log.Println(err.Error())
 		ctx.YAML(err.Status(), ErrBody(err.Code(), err.Error(), nil))
 		return
 	}

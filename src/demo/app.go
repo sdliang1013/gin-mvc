@@ -20,13 +20,13 @@ var (
 	}
 )
 
-// DemoServer 优雅停机服务
-type DemoServer struct {
+// Server 优雅停机服务
+type Server struct {
 	HttpSrv *http.Server
 	TimeOut time.Duration
 }
 
-func (agent *DemoServer) Start() {
+func (agent *Server) Start() {
 	log.Printf("Listening and serving HTTP on %s\n", agent.HttpSrv.Addr)
 	err := agent.HttpSrv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -34,11 +34,11 @@ func (agent *DemoServer) Start() {
 	}
 }
 
-func (agent *DemoServer) Stop(ctx context.Context) error {
+func (agent *Server) Stop(ctx context.Context) error {
 	return agent.HttpSrv.Shutdown(ctx)
 }
 
-func (agent *DemoServer) Timeout() time.Duration {
+func (agent *Server) Timeout() time.Duration {
 	return agent.TimeOut
 }
 
@@ -53,7 +53,7 @@ func Run(addr string) {
 	// 注册方式: 自动扫描
 	router.RegisterController("/mvc2", &Controller{})
 	// start engine
-	server := &DemoServer{
+	server := &Server{
 		HttpSrv: &http.Server{
 			Addr:         addr,
 			Handler:      engine,

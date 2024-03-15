@@ -3,7 +3,6 @@ package caul
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"path"
 	"reflect"
@@ -20,10 +19,11 @@ var (
 	methods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}
 )
 
-// CMiddleware 中间件
-type CMiddleware = gin.HandlerFunc
+// MidHandler 中间件
+type MidHandler = gin.HandlerFunc
 
 // RouteFunc 路由方法签名
+// todo: 支持任意形式的method
 type RouteFunc func(ctx *gin.Context) (data any, err error)
 
 // Route 路由信息
@@ -40,9 +40,9 @@ type Controller interface {
 
 // CRoute 控制器路由
 type CRoute struct {
-	Path       string        // 上级路由
-	Controller Controller    //注册的接口
-	Handlers   []CMiddleware //中间件
+	Path       string       // 上级路由
+	Controller Controller   //注册的接口
+	Handlers   []MidHandler //中间件
 }
 
 type CRouter struct {
@@ -50,7 +50,7 @@ type CRouter struct {
 }
 
 // RegisterMiddleware 注册中间件
-func (r *CRouter) RegisterMiddleware(handlers ...CMiddleware) CRouter {
+func (r *CRouter) RegisterMiddleware(handlers ...MidHandler) CRouter {
 	r.Use(handlers...)
 	return *r
 }
@@ -62,18 +62,13 @@ func (r *CRouter) RegisterRoute(cRoute CRoute) CRouter {
 	if !strings.HasPrefix(cRoute.Path, PathSplit) {
 		panic(fmt.Errorf("Path must start with %s: %s\n", PathSplit, cRoute.Path))
 	}
-	if cRoute.Path == PathSplit {
-		cRoute.Path = ""
-	} else if strings.HasSuffix(cRoute.Path, PathSplit) {
-		cRoute.Path = cRoute.Path[0 : len(cRoute.Path)-1]
-	}
+	group := r.Group(cRoute.Path, cRoute.Handlers...)
 	// scan method
 	for _, route := range cRoute.Controller.Routes() {
 		if !strings.HasPrefix(route.Path, PathSplit) {
 			panic(fmt.Errorf("Path must start with %s: %s\n", PathSplit, route.Path))
 		}
-		handlers := append(cRoute.Handlers, r.FuncWrapper(route.Func))
-		r.Handle(route.Method, cRoute.Path+route.Path, handlers...)
+		group.Handle(route.Method, route.Path, r.FuncWrapper(route.Func))
 	}
 	return *r
 }
@@ -81,15 +76,11 @@ func (r *CRouter) RegisterRoute(cRoute CRoute) CRouter {
 // RegisterController 注册控制器
 //
 //	@param [relativePath 上级路径, controller 控制器, handlers 插件]
-func (r *CRouter) RegisterController(relativePath string, controller interface{}, handlers ...CMiddleware) CRouter {
+func (r *CRouter) RegisterController(relativePath string, controller interface{}, handlers ...MidHandler) CRouter {
 	if !strings.HasPrefix(relativePath, PathSplit) {
 		panic(fmt.Errorf("relativePath must start with %s: %s\n", PathSplit, relativePath))
 	}
-	if relativePath == PathSplit {
-		relativePath = ""
-	} else if strings.HasSuffix(relativePath, PathSplit) {
-		relativePath = relativePath[0 : len(relativePath)-1]
-	}
+	group := r.Group(relativePath, handlers...)
 	ctrlStruct := reflect.ValueOf(controller)
 	ctrlType := reflect.TypeOf(controller)
 	// include package path
@@ -103,26 +94,24 @@ func (r *CRouter) RegisterController(relativePath string, controller interface{}
 			continue
 		}
 		method := ctrlStruct.Method(i)
-		realPath := r.getPath(relativePath, funcName)
-		mHandlers := append(handlers,
-			func(method reflect.Value) CMiddleware {
-				return func(c *gin.Context) {
-					r.parseResults(c, method.Call(r.parseParams(c)))
-				}
-			}(method))
-		r.Handle(httpMethod, realPath, mHandlers...)
+		realPath := r.getPath(funcName)
+		handler := func(method reflect.Value) gin.HandlerFunc {
+			return func(c *gin.Context) {
+				r.parseResults(c, method.Call(r.parseParams(c, method)))
+			}
+		}(method)
+		group.Handle(httpMethod, realPath, handler)
 	}
 	return *r
 }
 
 // FuncWrapper 原始方法包装
-func (r *CRouter) FuncWrapper(method RouteFunc) CMiddleware {
+func (r *CRouter) FuncWrapper(method RouteFunc) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// todo: 支持任意形式的method
 		res, err := method(ctx)
 		if err != nil {
-			httpErr := WrapError(err)
-			log.Println(httpErr)
-			r.responseFunc()(ctx, res, httpErr)
+			r.responseFunc()(ctx, res, WrapError(err))
 			return
 		}
 		if res != nil {
@@ -158,16 +147,17 @@ func (r *CRouter) getHttpMethod(funcName string) (string, bool) {
 //
 //	驼峰命名法 GetAbcDef -> GET请求, 路径/abc/def
 //	@param [relativePath 上级路径, funcName 以HttpMethod开头 GetAbcDef PostAbcDef]
-func (r *CRouter) getPath(relativePath string, funcName string) string {
+func (r *CRouter) getPath(funcName string) string {
 	words := SplitCameCase(funcName)
 	if len(words) == 1 {
-		return relativePath
+		return ""
 	}
-	return path.Join(relativePath, strings.ToLower(path.Join(words[1:]...)))
+	return strings.ToLower(path.Join(words[1:]...))
 }
 
 // parseParams 参数处理
-func (r *CRouter) parseParams(ctx *gin.Context) []reflect.Value {
+func (r *CRouter) parseParams(ctx *gin.Context, method reflect.Value) []reflect.Value {
+	// todo: 反射 method的参数列表 的值
 	return []reflect.Value{reflect.ValueOf(ctx)}
 }
 
@@ -179,9 +169,7 @@ func (r *CRouter) parseResults(ctx *gin.Context, results []reflect.Value) {
 	case 1:
 		r.responseFunc()(ctx, r.parseData(results[0]), nil)
 	default:
-		err := r.parseError(results[1])
-		log.Println(err)
-		r.responseFunc()(ctx, r.parseData(results[0]), err)
+		r.responseFunc()(ctx, r.parseData(results[0]), r.parseError(results[1]))
 	}
 }
 
